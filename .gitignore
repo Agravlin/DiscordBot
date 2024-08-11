@@ -162,4 +162,4 @@ cython_debug/
 #.idea/
 
 # For token
-creditentials.txt
+config.py
