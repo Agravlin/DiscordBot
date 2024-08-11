@@ -66,4 +66,4 @@ async def handle_command(client, message: discord.Message) -> str:
                 VOLUME_VALUE -= float(message.content[9:])
         VOLUME_VALUE = max(0.0, min(VOLUME_VALUE, 2.0))
 
-    return f"Volume adjusted to {VOLUME_VALUE * 100:.0f}%."
+    return f"Volume adjusted to {VOLUME_VALUE}"
