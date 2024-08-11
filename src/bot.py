@@ -1,6 +1,8 @@
 import discord
 import responses
 from config import DISCORD_TOKEN
+import yt_dlp as youtube_dl
+import asyncio
 
 
 def run_discord_bot():
@@ -10,7 +12,7 @@ def run_discord_bot():
 
     @client.event
     async def on_ready():
-        print(f'Logged in as {client.user}')
+        print(f'Logged in as {client.user}')     
 
     @client.event
     async def on_message(message: discord.Message) -> None:
@@ -23,6 +25,8 @@ def run_discord_bot():
 
         # Starting letter
         if message.content.startswith('.'):
-            await message.channel.send('Hello!')
+            response = await responses.handle_response(message)
+            if response:
+                await message.channel.send(response)
 
     client.run(token=DISCORD_TOKEN)
