@@ -1,9 +1,6 @@
 import discord
 import responses
 from config import DISCORD_TOKEN
-import yt_dlp as youtube_dl
-import asyncio
-
 
 def run_discord_bot():
     intents = discord.Intents.default()
@@ -25,7 +22,7 @@ def run_discord_bot():
 
         # Starting letter
         if message.content.startswith('.'):
-            response = await responses.handle_response(message)
+            response = await responses.handle_command(client, message)
             if response:
                 await message.channel.send(response)
 
