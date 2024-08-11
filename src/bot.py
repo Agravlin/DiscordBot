@@ -2,7 +2,7 @@ import discord
 from config import DISCORD_TOKEN
 
 
-if __name__ == "__main__":
+def run_discord_bot():
     intents = discord.Intents.default()
     intents.message_content = True
     client = discord.Client(intents=intents)
@@ -16,7 +16,7 @@ if __name__ == "__main__":
         # Prevent recursive messages
         if message.author == client.user:
             return
-        
+            
         # Print the content
         print(f'{message.author} wrote {message.content}')
 
