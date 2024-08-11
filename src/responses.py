@@ -66,4 +66,12 @@ async def handle_command(client, message: discord.Message) -> str:
                 VOLUME_VALUE -= float(message.content[9:])
         VOLUME_VALUE = max(0.0, min(VOLUME_VALUE, 2.0))
 
-    return f"Volume adjusted to {VOLUME_VALUE}"
+        return f"Volume adjusted to {VOLUME_VALUE} (Needs Reconnection)"
+
+    elif message.content.startswith('.disconnect'):
+        # If bot is connected to vc
+        if message.guild.voice_client: 
+            await message.guild.voice_client.disconnect()
+            return "Disconnected from the voice channel."
+        else:
+            return "I'm not connected to any voice channel."
