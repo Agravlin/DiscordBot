@@ -3,6 +3,11 @@ import yt_dlp as youtube_dl
 import asyncio
 
 # ToDo: Add playlist
+# ToDo: Add command menu
+# ToDo: Open music with search functionality
+# ToDo: Better opening music responses (clickable links etc.)
+# ToDo: Disconnect when inactive
+
 VOLUME_VALUE = 0.5
 
 ytdl_format_options = {
