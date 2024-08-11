@@ -2,6 +2,7 @@ import discord
 import yt_dlp as youtube_dl
 import asyncio
 
+# ToDo: Add playlist
 VOLUME_VALUE = 0.5
 
 ytdl_format_options = {
@@ -36,7 +37,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         filename = data['url'] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
-async def handle_command(client, message: discord.Message) -> str:
+async def handle_command(client: discord.Client, message: discord.Message) -> str:
     global VOLUME_VALUE
 
     if message.content.startswith('.play '):
