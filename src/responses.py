@@ -51,4 +51,4 @@ async def handle_command(client, message: discord.Message) -> str:
             return "You need to be in a voice channel to play music."
 
     # Add more command handling logic here
-    return None
+    return f'Now playing: {player.title}'
