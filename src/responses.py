@@ -50,6 +50,8 @@ async def handle_command(client: discord.Client, message: discord.Message) -> st
     match command:
         case "play":
             return await handle_play(client, message, args)
+        case "enter":   
+            return await handle_enter(client, message)
         case "volume":
             return await handle_volume(client, message, args)
         case "disconnect":
@@ -73,6 +75,10 @@ async def handle_play(client: discord.Client, message: discord.Message, args: li
         return f'Now playing: {player.title}'
     else:
         return "You need to be in a voice channel to play music."
+
+async def handle_enter(client: discord.Client, message: discord.Message) -> str:
+    await message.author.voice.channel.connect()
+    return "I've entered the channel"
 
 async def handle_volume(client: discord.Client, message: discord.Message, args: list[str]) -> str:
     if len(message.content) == 7:
