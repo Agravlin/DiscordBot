@@ -2,13 +2,15 @@ import discord
 import responses
 from config import DISCORD_TOKEN
 
-def run_discord_bot():
+MESSAGE_PREFIX = "-"
+
+def run_discord_bot() -> None:
     intents = discord.Intents.default()
     intents.message_content = True
     client = discord.Client(intents=intents)
 
     @client.event
-    async def on_ready():
+    async def on_ready() -> None:
         print(f'Logged in as {client.user}')     
 
     @client.event
@@ -21,7 +23,7 @@ def run_discord_bot():
         print(f'{message.author} wrote {message.content}')
 
         # Starting letter
-        if message.content.startswith('.'):
+        if message.content.startswith(MESSAGE_PREFIX):
             response = await responses.handle_command(client, message)
             if response:
                 await message.channel.send(response)

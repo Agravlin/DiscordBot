@@ -41,43 +41,55 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
-
+    
 async def handle_command(client: discord.Client, message: discord.Message) -> str:
-    global VOLUME_VALUE
+    command_content = message.content[1:]
+    command = command_content.split()[0] 
+    args = command_content.split()[1:]
 
-    if message.content.startswith('.play '):
-        url = message.content.split(' ')[1]
-        if message.author.voice:
-            channel = message.author.voice.channel
-            if not message.guild.voice_client:
-                await channel.connect()
-            voice_client = message.guild.voice_client
+    match command:
+        case "play":
+            return await handle_play(client, message, args)
+        case "volume":
+            return await handle_volume(client, message, args)
+        case "disconnect":
+            return await handle_disconnect(client, message)
+        case _:
+            return "Unknown command. Please try again."
 
-            async with message.channel.typing():
-                player = await YTDLSource.from_url(url, loop=client.loop, stream=True)
-                player.volume = VOLUME_VALUE
-                voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+async def handle_play(client: discord.Client, message: discord.Message, args: list[str]) -> str:
+    url = message.content.split(' ')[1]
+    if message.author.voice:
+        channel = message.author.voice.channel
+        if not message.guild.voice_client:
+            await channel.connect()
+        voice_client = message.guild.voice_client
 
-            return f'Now playing: {player.title}'
+        async with message.channel.typing():
+            player = await YTDLSource.from_url(url, loop=client.loop, stream=True)
+            player.volume = VOLUME_VALUE
+            voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+
+        return f'Now playing: {player.title}'
+    else:
+        return "You need to be in a voice channel to play music."
+
+async def handle_volume(client: discord.Client, message: discord.Message, args: list[str]) -> str:
+    if len(message.content) == 7:
+        return f'Current Volume is: {VOLUME_VALUE}'
+    elif message.content[7:9] == " +" or " -":
+        if message.content[8] == "+":
+            VOLUME_VALUE += float(message.content[9:])
         else:
-            return "You need to be in a voice channel to play music."
+            VOLUME_VALUE -= float(message.content[9:])
+    VOLUME_VALUE = max(0.0, min(VOLUME_VALUE, 2.0))
 
-    elif message.content.startswith('.volume'):
-        if len(message.content) == 7:
-            return f'Current Volume is: {VOLUME_VALUE}'
-        elif message.content[7:9] == " +" or " -":
-            if message.content[8] == "+":
-                VOLUME_VALUE += float(message.content[9:])
-            else:
-                VOLUME_VALUE -= float(message.content[9:])
-        VOLUME_VALUE = max(0.0, min(VOLUME_VALUE, 2.0))
+    return f"Volume adjusted to {VOLUME_VALUE} (Needs Reconnection)"
 
-        return f"Volume adjusted to {VOLUME_VALUE} (Needs Reconnection)"
-
-    elif message.content.startswith('.disconnect'):
-        # If bot is connected to vc
-        if message.guild.voice_client: 
-            await message.guild.voice_client.disconnect()
-            return "Disconnected from the voice channel."
-        else:
-            return "I'm not connected to any voice channel."
+async def handle_disconnect(client: discord.Client, message: discord.Message) -> str:
+    # If bot is connected to vc
+    if message.guild.voice_client: 
+        await message.guild.voice_client.disconnect()
+        return "Disconnected from the voice channel."
+    else:
+        return "I'm not connected to any voice channel."
