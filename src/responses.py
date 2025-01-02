@@ -119,7 +119,6 @@ async def play_url(client: discord.Client, message: discord.Message, url: str) -
         await channel.connect()
     voice_client = message.guild.voice_client
     async with message.channel.typing():
-        await sleep()
         try:
             player = await YTDLSource.from_url(url, loop=client.loop, stream=True)
             player.volume = VOLUME_VALUE
