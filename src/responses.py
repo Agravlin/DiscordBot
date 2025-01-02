@@ -81,16 +81,22 @@ async def handle_enter(client: discord.Client, message: discord.Message) -> str:
     return "I've entered the channel"
 
 async def handle_volume(client: discord.Client, message: discord.Message, args: list[str]) -> str:
-    if len(message.content) == 7:
-        return f'Current Volume is: {VOLUME_VALUE}'
-    elif message.content[7:9] == " +" or " -":
-        if message.content[8] == "+":
-            VOLUME_VALUE += float(message.content[9:])
+    global VOLUME_VALUE
+    if not args:
+        if message.guild.voice_client and message.guild.voice_client.source:
+            current_volume = message.guild.voice_client.source.volume
+            return f'Current Volume is: {current_volume:.2f}'
         else:
-            VOLUME_VALUE -= float(message.content[9:])
-    VOLUME_VALUE = max(0.0, min(VOLUME_VALUE, 2.0))
+            return "No audio is currently playing."
+    try:
+        adjustment = float(args[0]) / 100
+        voice_client = message.guild.voice_client
 
-    return f"Volume adjusted to {VOLUME_VALUE} (Needs Reconnection)"
+        VOLUME_VALUE = max(0, min(adjustment, 1))
+        voice_client.source.volume = VOLUME_VALUE
+        return f"Volume adjusted to {adjustment} (range: 0-100)"
+    except ValueError:
+        return "Invalid volume adjustment. Please provide a valid number."
 
 async def handle_disconnect(client: discord.Client, message: discord.Message) -> str:
     # If bot is connected to vc
