@@ -1,30 +1,40 @@
 import discord
 import yt_dlp as youtube_dl
 import asyncio
+from randomness import generate_random_headers
+from random import uniform
 
 # ToDo: Add playlist
 # ToDo: Add command menu
 # ToDo: Better opening music responses (clickable links etc.)
 # ToDo: Disconnect when inactive
 
-VOLUME_VALUE = 0.5
+VOLUME_VALUE = 0.15
 
-ytdl_format_options = {
-    'format': 'bestaudio/best',
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'opus',
-        'preferredquality': '192',
-    }],
-    'noplaylist': True,
-}
+def create_ytdl_options() -> dict:
+    return {
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'opus',
+            'preferredquality': '192',
+        }],
+        'noplaylist': True,
+        'format': 'bestaudio[filesize<10M]',
+        'http_headers': generate_random_headers(),
+    }
+
+def create_ytdl_instance() -> youtube_dl.YoutubeDL:
+    options = create_ytdl_options()
+    return youtube_dl.YoutubeDL(options)
+
+async def sleep() -> None:
+    await asyncio.sleep(uniform(0.1, 1.0))
 
 ffmpeg_options = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
     'options': f'-vn -filter:a "volume={VOLUME_VALUE}"'
 }
-
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=VOLUME_VALUE):
@@ -35,6 +45,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
     @classmethod
     async def from_url(cls, url, *, loop=None, stream=True):
+        ytdl = create_ytdl_instance()
         loop = loop or asyncio.get_event_loop()
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
 
@@ -107,7 +118,9 @@ async def play_url(client: discord.Client, message: discord.Message, url: str) -
     if not message.guild.voice_client:
         await channel.connect()
     voice_client = message.guild.voice_client
+    ytdl = create_ytdl_instance()
     async with message.channel.typing():
+        await sleep()
         try:
             data = await asyncio.get_event_loop().run_in_executor(
                 None, lambda: ytdl.extract_info(url, download=False)
@@ -125,6 +138,9 @@ async def play_url(client: discord.Client, message: discord.Message, url: str) -
     return f"Now playing: {player.title}"
 
 async def play_search(client: discord.Client, message: discord.Message, query: str) -> str:
+    ytdl = create_ytdl_instance()
+    await sleep()
+
     search_results = await asyncio.get_event_loop().run_in_executor(
         None,
         lambda: ytdl.extract_info(f"ytsearch:{query}", download=False)
