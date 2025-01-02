@@ -4,7 +4,6 @@ import asyncio
 
 # ToDo: Add playlist
 # ToDo: Add command menu
-# ToDo: Open music with search functionality
 # ToDo: Better opening music responses (clickable links etc.)
 # ToDo: Disconnect when inactive
 
@@ -60,21 +59,15 @@ async def handle_command(client: discord.Client, message: discord.Message) -> st
             return "Unknown command. Please try again."
 
 async def handle_play(client: discord.Client, message: discord.Message, args: list[str]) -> str:
-    url = message.content.split(' ')[1]
-    if message.author.voice:
-        channel = message.author.voice.channel
-        if not message.guild.voice_client:
-            await channel.connect()
-        voice_client = message.guild.voice_client
+    if not args:
+        return "Provide a URL or a search query."
+    query_or_url = " ".join(args) 
 
-        async with message.channel.typing():
-            player = await YTDLSource.from_url(url, loop=client.loop, stream=True)
-            player.volume = VOLUME_VALUE
-            voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
-
-        return f'Now playing: {player.title}'
+    if query_or_url.startswith("http://") or query_or_url.startswith("https://"):
+        return await play_url(client, message, query_or_url)
     else:
-        return "You need to be in a voice channel to play music."
+        return await play_search(client, message, query_or_url)
+
 
 async def handle_enter(client: discord.Client, message: discord.Message) -> str:
     await message.author.voice.channel.connect()
@@ -105,3 +98,43 @@ async def handle_disconnect(client: discord.Client, message: discord.Message) ->
         return "Disconnected from the voice channel."
     else:
         return "I'm not connected to any voice channel."
+    
+async def play_url(client: discord.Client, message: discord.Message, url: str) -> str:
+    if not message.author.voice:
+        return "You need to be in a voice channel to play music."
+
+    channel = message.author.voice.channel
+    if not message.guild.voice_client:
+        await channel.connect()
+    voice_client = message.guild.voice_client
+    async with message.channel.typing():
+        try:
+            data = await asyncio.get_event_loop().run_in_executor(
+                None, lambda: ytdl.extract_info(url, download=False)
+            )
+            player = await YTDLSource.from_url(url, loop=client.loop, stream=True)
+            player.volume = VOLUME_VALUE
+            voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+        except youtube_dl.DownloadError as e:
+            if "format not available" in str(e):
+                return "The video is too large to load. Please provide a smaller file."
+            else:
+                print(e)
+                return "An error occurred while processing the URL."
+
+    return f"Now playing: {player.title}"
+
+async def play_search(client: discord.Client, message: discord.Message, query: str) -> str:
+    search_results = await asyncio.get_event_loop().run_in_executor(
+        None,
+        lambda: ytdl.extract_info(f"ytsearch:{query}", download=False)
+    )
+
+    if "entries" not in search_results or not search_results["entries"]:
+        return "No results found on YouTube."
+
+    url = search_results["entries"][0]["webpage_url"]
+    title = search_results["entries"][0]["title"]
+
+    await message.channel.send(f"Found: **{title}**\n{url}")
+    return await play_url(client, message, url)
