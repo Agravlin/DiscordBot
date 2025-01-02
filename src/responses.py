@@ -79,7 +79,6 @@ async def handle_play(client: discord.Client, message: discord.Message, args: li
     else:
         return await play_search(client, message, query_or_url)
 
-
 async def handle_enter(client: discord.Client, message: discord.Message) -> str:
     await message.author.voice.channel.connect()
     return "I've entered the channel"
@@ -97,7 +96,8 @@ async def handle_volume(client: discord.Client, message: discord.Message, args: 
         voice_client = message.guild.voice_client
 
         VOLUME_VALUE = max(0, min(adjustment, 1))
-        voice_client.source.volume = VOLUME_VALUE
+        if voice_client and voice_client.source:
+            voice_client.source.volume = VOLUME_VALUE
         return f"Volume adjusted to {adjustment} (range: 0-100)"
     except ValueError:
         return "Invalid volume adjustment. Please provide a valid number."
@@ -118,13 +118,9 @@ async def play_url(client: discord.Client, message: discord.Message, url: str) -
     if not message.guild.voice_client:
         await channel.connect()
     voice_client = message.guild.voice_client
-    ytdl = create_ytdl_instance()
     async with message.channel.typing():
         await sleep()
         try:
-            data = await asyncio.get_event_loop().run_in_executor(
-                None, lambda: ytdl.extract_info(url, download=False)
-            )
             player = await YTDLSource.from_url(url, loop=client.loop, stream=True)
             player.volume = VOLUME_VALUE
             voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
@@ -148,7 +144,6 @@ async def play_search(client: discord.Client, message: discord.Message, query: s
 
     if "entries" not in search_results or not search_results["entries"]:
         return "No results found on YouTube."
-
     url = search_results["entries"][0]["webpage_url"]
     title = search_results["entries"][0]["title"]
 
