@@ -4,11 +4,6 @@ import asyncio
 from randomness import generate_random_headers
 from random import uniform
 
-# ToDo: Add playlist
-# ToDo: Add command menu
-# ToDo: Better opening music responses (clickable links etc.)
-# ToDo: Disconnect when inactive
-
 VOLUME_VALUE = 0.15
 
 def create_ytdl_options() -> dict:
