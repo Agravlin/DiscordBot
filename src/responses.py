@@ -1,10 +1,15 @@
 import discord
 import yt_dlp as youtube_dl
 import asyncio
+import os
 from randomness import generate_random_headers
 from random import uniform
+from collections import deque
 
 VOLUME_VALUE = 0.15
+DOWNLOAD_PATH = "./cache"
+CACHE_LEN = 5
+cached_songs = deque(maxlen=CACHE_LEN)
 
 def create_ytdl_options() -> dict:
     return {
@@ -17,6 +22,7 @@ def create_ytdl_options() -> dict:
         'noplaylist': True,
         'format': 'bestaudio[filesize<10M]',
         'http_headers': generate_random_headers(),
+        'outtmpl': os.path.join(DOWNLOAD_PATH, '%(title)s.%(ext)s'),
     }
 
 def create_ytdl_instance() -> youtube_dl.YoutubeDL:
@@ -40,11 +46,20 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
     @classmethod
     async def from_url(cls, url, *, loop=None, stream=True):
+        global cached_songs
+        for song in cached_songs:
+            if song["url"] == url:
+                print(f"Using cached file: {song['path']}")
+                return cls(discord.FFmpegPCMAudio(song['path'], **ffmpeg_options), data=song)
+            
+        # If not in cache    
         ytdl = create_ytdl_instance()
         loop = loop or asyncio.get_event_loop()
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
+        print(f"Downloading to: {filename}")
+        cached_songs.append({'title': data.get('title'), 'url': url, 'path': filename})
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
     
 async def handle_command(client: discord.Client, message: discord.Message) -> str:
