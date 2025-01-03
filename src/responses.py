@@ -98,7 +98,7 @@ async def handle_volume(client: discord.Client, message: discord.Message, args: 
         VOLUME_VALUE = max(0, min(adjustment, 1))
         if voice_client and voice_client.source:
             voice_client.source.volume = VOLUME_VALUE
-        return f"Volume adjusted to {adjustment} (range: 0-100)"
+        return f"Volume adjusted to {adjustment*100} (range: 0-100)"
     except ValueError:
         return "Invalid volume adjustment. Please provide a valid number."
 
