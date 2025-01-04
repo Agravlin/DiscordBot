@@ -27,9 +27,10 @@ def run_discord_bot() -> None:
             
         # Print the content
         print(f'{message.author} wrote {message.content}')
-        last_activity = time.time()
+        
         # Starting letter
         if message.content.startswith(MESSAGE_PREFIX):
+            last_activity = time.time()
             response = await responses.handle_command(client, message)
             if response:
                 await message.channel.send(response)
