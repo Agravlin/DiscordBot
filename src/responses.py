@@ -62,6 +62,8 @@ async def handle_command(client: discord.Client, message: discord.Message) -> st
             return await handle_volume(client, message, args)
         case "disconnect":
             return await handle_disconnect(client, message)
+        case "skip":
+            return await handle_skip(client, message)
         case _:
             return "Unknown command. Please try again."
 
@@ -106,7 +108,19 @@ async def handle_disconnect(client: discord.Client, message: discord.Message) ->
         return "Disconnected from the voice channel."
     else:
         return "I'm not connected to any voice channel."
-    
+
+async def handle_skip(client: discord.Client, message: discord.Message) -> str:
+    voice_client = message.guild.voice_client
+    if not voice_client or not voice_client.is_playing():
+        return "No track is currently playing."
+
+    queue = get_queue(message.guild.id)
+    if queue:
+        voice_client.stop()
+        return "Skipped to next track."
+    else:
+        return "Track could not be skipped, there are no more tracks in queue"
+
 async def play_url(client: discord.Client, message: discord.Message, url: str) -> str:
     if not message.author.voice:
         return "You need to be in a voice channel to play music."
