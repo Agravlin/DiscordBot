@@ -9,7 +9,6 @@ music_queues: dict[int, list["YTDLSource"]] = {}
 
 def create_ytdl_options() -> dict:
     return {
-        'format': 'bestaudio/best',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'opus',

@@ -1,2 +1,3 @@
 discord
 yt_dlp
+ruff
