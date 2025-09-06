@@ -5,6 +5,7 @@ from randomness import generate_random_headers
 from random import uniform
 
 VOLUME_VALUE = 0.15
+music_queues: dict[int, list["YTDLSource"]] = {}
 
 def create_ytdl_options() -> dict:
     return {
@@ -61,6 +62,8 @@ async def handle_command(client: discord.Client, message: discord.Message) -> st
             return await handle_volume(client, message, args)
         case "disconnect":
             return await handle_disconnect(client, message)
+        case "skip":
+            return await handle_skip(client, message)
         case _:
             return "Unknown command. Please try again."
 
@@ -101,10 +104,23 @@ async def handle_disconnect(client: discord.Client, message: discord.Message) ->
     # If bot is connected to vc
     if message.guild.voice_client: 
         await message.guild.voice_client.disconnect()
+        get_queue(message.guild.id).clear()
         return "Disconnected from the voice channel."
     else:
         return "I'm not connected to any voice channel."
-    
+
+async def handle_skip(client: discord.Client, message: discord.Message) -> str:
+    voice_client = message.guild.voice_client
+    if not voice_client or not voice_client.is_playing():
+        return "No track is currently playing."
+
+    queue = get_queue(message.guild.id)
+    if queue:
+        voice_client.stop()
+        return "Skipped to next track."
+    else:
+        return "Track could not be skipped, there are no more tracks in queue"
+
 async def play_url(client: discord.Client, message: discord.Message, url: str) -> str:
     if not message.author.voice:
         return "You need to be in a voice channel to play music."
@@ -117,7 +133,14 @@ async def play_url(client: discord.Client, message: discord.Message, url: str) -
         try:
             player = await YTDLSource.from_url(url, loop=client.loop, stream=True)
             player.volume = VOLUME_VALUE
-            voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+            queue = get_queue(message.guild.id)
+            if voice_client.is_playing():
+                queue.append(player)
+                return f"Added to queue: {player.title}"
+            voice_client.play(
+                player,
+                after=lambda e: play_next(message.guild.id, voice_client) if not e else print(f'Player error: {e}'),
+            )
         except youtube_dl.DownloadError as e:
             if "format not available" in str(e):
                 return "The video is too large to load. Please provide a smaller file."
@@ -143,3 +166,15 @@ async def play_search(client: discord.Client, message: discord.Message, query: s
 
     await message.channel.send(f"Found: **{title}**\n{url}")
     return await play_url(client, message, url)
+
+def get_queue(guild_id: int) -> list["YTDLSource"]:
+    return music_queues.setdefault(guild_id, [])
+
+def play_next(guild_id: int, voice_client: discord.VoiceClient) -> None:
+    queue = get_queue(guild_id)
+    if queue:
+        next_source = queue.pop(0)
+        voice_client.play(
+            next_source,
+            after=lambda e: play_next(guild_id, voice_client) if not e else print(f'Player error: {e}')
+        )
